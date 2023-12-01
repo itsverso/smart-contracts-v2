@@ -132,7 +132,8 @@ contract MarketMaster is
 
     ) 
         public 
-    {
+    {   
+        isBonded[msg.sender][_tokenId] = _isBonded;
         creator[msg.sender][_tokenId] = _creator;
         tokenSupply[msg.sender][_tokenId] = 0;
         supplyLimit[msg.sender][_tokenId] = _isBonded ? MAX_INT : _supplyLimit;
@@ -143,7 +144,9 @@ contract MarketMaster is
     // Bonding curve price getters
     ///////////////////////////////// 
 
-    function getPrice(uint256 supply, uint256 amount) public pure returns (uint256) {
+    function getPrice(uint256 supply, uint256 amount) 
+        internal pure returns (uint256) 
+    {
         uint256 sum1 = supply == 0 ? 0 : (supply - 1) * (supply) * (2 * (supply - 1) + 1) / 6;
         uint256 sum2 = supply == 0 && amount == 1 ? 0 : (supply - 1 + amount) * (supply + amount) * (2 * (supply - 1 + amount) + 1) / 6;
         uint256 summation = sum2 - sum1;
@@ -151,12 +154,20 @@ contract MarketMaster is
     }
 
     function getBuyPrice(address _collection, uint256 _tokenId, uint _amount) 
-        public view returns (uint256 price) {
-        return getPrice(tokenSupply[_collection][_tokenId], _amount); 
+        public 
+        view 
+        returns (uint256 price) 
+    {   
+        if (isBonded[_collection][_tokenId]) {
+            return getPrice(tokenSupply[_collection][_tokenId], _amount); 
+        } else {
+            return tokenPrice[_collection][_tokenId] * _amount;
+        }
     }
 
     function getSellPrice(address _collection, uint256 _tokenId, uint _amount) 
-        public view returns (uint256 price) {
+        public view returns (uint256 price) 
+    {
         return getPrice(tokenSupply[_collection][_tokenId] - _amount, _amount);
     }
 
@@ -193,7 +204,7 @@ contract MarketMaster is
         public 
         payable 
         whenNotPaused()
-    {
+    {   
         if (isBonded[msg.sender][_tokenId]) _executeBondedBuy(msg.sender, _tokenId, _amount);
         else _executeRegularBuy(msg.sender, _tokenId, _amount);
     }
@@ -232,7 +243,7 @@ contract MarketMaster is
         uint creatorFee = totalPrice - platformFee;
         (bool success1, ) = protocolFeeDestination.call{value: platformFee}("");
         (bool success2, ) = creator[_collection][_tokenId].call{value: creatorFee}("");
-        require(success1 && success2, "Error executing buy");
+        require(success1 && success2, "Error executing regular buy");
     }
 
     /**
@@ -278,10 +289,9 @@ contract MarketMaster is
         uint256 protocolFee = price * protocolFeePercent / 1 ether;
         uint256 subjectFee = price * creatorFeePercent / 1 ether;
         tokenSupply[_collection][_tokenId] = supply - _amount;
-        (bool success1, ) = _collection.call{value: price - protocolFee - subjectFee}("");
-        (bool success2, ) = protocolFeeDestination.call{value: protocolFee}("");
-        (bool success3, ) = creator[_collection][_tokenId].call{value: subjectFee}("");
-        require(success1 && success2 && success3, "Error executing sell");
+        (bool success1, ) = protocolFeeDestination.call{value: protocolFee}("");
+        (bool success2, ) = creator[_collection][_tokenId].call{value: subjectFee}("");
+        require(success1 && success2, "Error executing sell");
     }  
 
     ////////////////////////////

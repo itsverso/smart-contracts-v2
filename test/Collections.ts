@@ -10,6 +10,7 @@ describe("Collections", function () {
   let collectionImplementation: any;
   let collectionRegistry: any;
   let marketMaster: any;
+
   beforeEach(async function () {
     const [account, otherAccount] = await ethers.getSigners();
     owner = account;
@@ -112,6 +113,9 @@ describe("Collections", function () {
     //// Creating Collection
     /////////////////////////////////////
     let collection: any;
+    const MODERATOR_HASH =
+      "0x44a854cabd360644e908fcd642b33fedfb60c399d7b1e7e2051275f0b09b0be5";
+
     beforeEach(async function () {
       const [account, otherAccount] = await ethers.getSigners();
       let tx = await collectionFactory.createCollection({
@@ -128,9 +132,160 @@ describe("Collections", function () {
       });
 
       let receipt = await tx.wait();
-      console.log(receipt);
+      const CollectionInstance = await ethers.getContractFactory("Collection");
+      collection = CollectionInstance.attach(receipt.logs[0].address);
     });
 
-    it("DEPLOY new instance of Collection and set NAME", async function () {});
+    it("Should DEPLOY new instance of Collection and set NAME", async function () {
+      expect(await collection.name()).to.equal("NAME");
+    });
+
+    it("Should DEPLOY new instance of Collection and set first MODERATOR", async function () {
+      expect(await collection.hasRole(MODERATOR_HASH, owner.address)).to.be
+        .true;
+    });
+
+    describe("Creating Versos", function () {
+      //////////////////////////////////////
+      //// Creating VERSOS
+      ////////////////////////////////////
+
+      beforeEach(async function () {
+        await collection.create(
+          "www.url.com",
+          owner.address,
+          "0x0000000000000000000000000000000000000000",
+          marketMaster.address,
+          "100000000000000000",
+          0,
+          true,
+          true
+        );
+      });
+
+      it("Should create a LISTED token", async function () {
+        expect(await marketMaster.tokenSupply(collection.address, 1)).to.equal(
+          1
+        );
+      });
+
+      it("Should match token supplies", async function () {
+        let supplyInCollection = await collection.tokenSupply(1);
+        let marketSupply = await marketMaster.tokenSupply(
+          collection.address,
+          1
+        );
+        expect(supplyInCollection).to.equal(marketSupply);
+      });
+
+      it("Should allow to BUY/COLLECT bonded token", async function () {
+        const [owner, otherAccount] = await ethers.getSigners();
+
+        let price = await marketMaster.getBuyPriceAfterFee(
+          collection.address,
+          1,
+          1
+        );
+
+        await collection
+          .connect(otherAccount)
+          .collect(1, otherAccount.address, 1, {
+            value: price,
+          });
+
+        let marketSupply = await marketMaster.tokenSupply(
+          collection.address,
+          1
+        );
+
+        expect(marketSupply).to.equal(2);
+      });
+
+      it("Should allow to BUY/COLLECT arbitrary number of bonded tokens", async function () {
+        const [owner, otherAccount] = await ethers.getSigners();
+        let amountToBuy = 10;
+        let price = await marketMaster.getBuyPriceAfterFee(
+          collection.address,
+          1,
+          amountToBuy
+        );
+        await collection
+          .connect(otherAccount)
+          .collect(1, otherAccount.address, amountToBuy, {
+            value: price,
+          });
+        let marketSupply = await marketMaster.tokenSupply(
+          collection.address,
+          1
+        );
+        expect(marketSupply).to.equal(11);
+      });
+
+      it("Should allow to SELL/WITHDRAW a bonded token", async function () {
+        const [owner, otherAccount] = await ethers.getSigners();
+        let amountToBuy = 10;
+        let price = await marketMaster.getBuyPriceAfterFee(
+          collection.address,
+          1,
+          amountToBuy
+        );
+        await collection
+          .connect(otherAccount)
+          .collect(1, otherAccount.address, amountToBuy, {
+            value: price,
+          });
+
+        await collection.connect(otherAccount).burn(1, 1);
+        let marketSupply = await marketMaster.tokenSupply(
+          collection.address,
+          1
+        );
+        expect(marketSupply).to.equal(10);
+      });
+
+      it("Should allow to SELL/WITHDRAW an arbitrary number of bonded tokens", async function () {
+        const [owner, otherAccount] = await ethers.getSigners();
+        let amountToBuy = 10;
+        let price = await marketMaster.getBuyPriceAfterFee(
+          collection.address,
+          1,
+          amountToBuy
+        );
+        await collection
+          .connect(otherAccount)
+          .collect(1, otherAccount.address, amountToBuy, {
+            value: price,
+          });
+
+        await collection.connect(otherAccount).burn(1, 8);
+        let marketSupply = await marketMaster.tokenSupply(
+          collection.address,
+          1
+        );
+        expect(marketSupply).to.equal(3);
+      });
+
+      it("Should have matching supplies", async function () {
+        const [owner, otherAccount] = await ethers.getSigners();
+        let amountToBuy = 10;
+        let price = await marketMaster.getBuyPriceAfterFee(
+          collection.address,
+          1,
+          amountToBuy
+        );
+        await collection
+          .connect(otherAccount)
+          .collect(1, otherAccount.address, amountToBuy, {
+            value: price,
+          });
+
+        let collectionSupply = await collection.tokenSupply(1);
+        let marketSupply = await marketMaster.tokenSupply(
+          collection.address,
+          1
+        );
+        expect(marketSupply).to.equal(collectionSupply);
+      });
+    });
   });
 });

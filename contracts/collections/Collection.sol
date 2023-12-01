@@ -125,7 +125,6 @@ contract Collection is
         public 
         initializer 
     {
-            console.log('WE ARE HERE TOO');
             // Set contract name
             name = _name;
             // Instantiate receiver
@@ -143,7 +142,6 @@ contract Collection is
             // Set up initial roles.
             _grantRole(DEFAULT_ADMIN_ROLE, _owner);
             _grantRole(DEFAULT_MODERATORS_ROLE, _owner);
-            console.log('WE NOT ARE HERE');
             _grantRole(DEFAULT_MEMBERS_ROLE, _owner);
             _setRoleAdmin(DEFAULT_MODERATORS_ROLE, DEFAULT_MODERATORS_ROLE);
             _setRoleAdmin(DEFAULT_MEMBERS_ROLE, DEFAULT_MODERATORS_ROLE);
@@ -216,6 +214,7 @@ contract Collection is
         bool _isBonded
     )
         public 
+        payable
         whenNotPaused()
         onlyWriters()
     {   
@@ -230,7 +229,7 @@ contract Collection is
             globalMarket.listToken(newTokenId, msg.sender, _isBonded, _supplyLimit, _tokenPrice);
 
             if (_isBonded) {
-                globalMarket.executeBuy(newTokenId, 1);
+                globalMarket.executeBuy{value: msg.value}(newTokenId, 1);
             }
         }
 
@@ -267,8 +266,8 @@ contract Collection is
             globalMarket.executeBuy{value: msg.value}(id, amount);
         }
 
-        _mint(receipient, id, 1, "");
-        tokenSupply[id] = tokenSupply[id] + 1;
+        _mint(receipient, id, amount, "");
+        tokenSupply[id] = tokenSupply[id] + amount;
     }
 
     /// @param tokenId: token ID.
@@ -286,7 +285,7 @@ contract Collection is
             globalMarket.executeSell(tokenId, amount);
         }
         _burn(msg.sender, tokenId, amount);
-        tokenSupply[tokenId] = tokenSupply[tokenId] - 1;
+        tokenSupply[tokenId] = tokenSupply[tokenId] - amount;
     }
 
     /////////////////////////////////
@@ -322,7 +321,7 @@ contract Collection is
                 RegularBalanceOf permissionsContract = RegularBalanceOf(tokenPermissions[tokenId]);
                 return permissionsContract.balanceOf(account) > 0;
             }
-        }
+        } else return true;
     }
 
 

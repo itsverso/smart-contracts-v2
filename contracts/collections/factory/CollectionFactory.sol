@@ -10,8 +10,6 @@ import "contracts/collections/factory/CollectionBeacon.sol";
 import "contracts/collections/CollectionRegistry.sol";
 import "contracts/helpers/Params.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title  Collection Factory Smart Contract
  * @author Hugo Sanchez
@@ -71,7 +69,7 @@ contract CollectionFactory is Ownable, Pausable {
             params._minimumBalance
         ));
 
-        console.log('WE ARE HERE');
+
         // 2. Register / mint collection
         CollectionRegistry registry = CollectionRegistry(_collectionRegistryAddress);
         registry.registerCollection(
