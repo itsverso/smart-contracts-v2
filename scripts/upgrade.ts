@@ -1,6 +1,9 @@
 import { ethers, upgrades } from "hardhat";
 
 async function main() {
+  // 0xB51552B78F8D086b68fe8E6d5f05B4e0A45A454d -- goerli
+  // 0x2E3f57349B8f6BB8859A6E0F647d352ad0D3C8E1 -- mainnet
+
   const MasterCollection = await ethers.getContractFactory("MasterCollection");
   // 0xB51552B78F8D086b68fe8E6d5f05B4e0A45A454d -- goerli
   // 0x2E3f57349B8f6BB8859A6E0F647d352ad0D3C8E1 -- mainnet
@@ -25,22 +28,26 @@ async function main() {
   console.log(`Deployed at ${master.address}`);
   console.log(`Implementation at: ${currentImplAddress}`);
 
-  let name = await master.name();
-  console.log("Name: ", name);
-
-  let tx = await master.create(
-    "0x",
-    "www.url.com",
-    "0x57317a302F8874527C5D4781993EA56814315B1C",
-    true
+  const PROXY = master.address;
+  const MasterCollectionV2 = await ethers.getContractFactory(
+    "MasterCollectionV2"
   );
 
-  let balance = await master.balanceOf(
-    "0x57317a302F8874527C5D4781993EA56814315B1C",
-    1
-  );
+  console.log("validating");
+  await upgrades.validateUpgrade(PROXY, MasterCollectionV2);
 
-  console.log("Name: ", balance);
+  console.log("Preparing ...");
+  let newAddress = await upgrades.prepareUpgrade(PROXY, MasterCollectionV2, {
+    kind: "uups",
+  });
+  console.log("Authorizing... ");
+  await master.allowUpgradeFor(newAddress);
+
+  console.log("Updating");
+  let masterV2 = await upgrades.upgradeProxy(PROXY, MasterCollectionV2, {
+    kind: "uups",
+  });
+  console.log("Master upgraded successfully at: ", masterV2);
 }
 
 main().catch((error) => {
