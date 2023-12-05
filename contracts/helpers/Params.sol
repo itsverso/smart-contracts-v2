@@ -16,4 +16,10 @@ library Params {
         uint _tokenPrice;
         bool _isBonded;
     }
+
+    struct Verso {
+        address creator;
+        string metadataURI;
+        bool isBonded;
+    }
 }

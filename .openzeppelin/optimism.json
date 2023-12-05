@@ -5,6 +5,11 @@
       "address": "0x2E3f57349B8f6BB8859A6E0F647d352ad0D3C8E1",
       "txHash": "0x728e5247adf03f0bf9b3e30d38f46a2f0b3faf1b6b1179ff7bb87fb853bed89b",
       "kind": "uups"
+    },
+    {
+      "address": "0xF45842dD9b634e63264ABa2e49f4C6282b34b199",
+      "txHash": "0xb447baf271af37633f19321e8641c9c2ceaf82ebd0b9983e85135d079437d3c9",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -93,6 +98,188 @@
             "type": "t_mapping(t_uint256,t_bool)",
             "contract": "MasterCollection",
             "src": "contracts/MasterCollection.sol:51"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_uint256,t_address)": {
+            "label": "mapping(uint256 => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_bool)": {
+            "label": "mapping(uint256 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_string_storage)": {
+            "label": "mapping(uint256 => string)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(uint256 => mapping(address => uint256))"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ERC1155": [
+            {
+              "contract": "ERC1155Upgradeable",
+              "label": "_balances",
+              "type": "t_mapping(t_uint256,t_mapping(t_address,t_uint256))",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol:27"
+            },
+            {
+              "contract": "ERC1155Upgradeable",
+              "label": "_operatorApprovals",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol:29"
+            },
+            {
+              "contract": "ERC1155Upgradeable",
+              "label": "_uri",
+              "type": "t_string_storage",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol:32"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "3d9e8087e2493d0615273651d7e3eebccf4c8ac226d12925de1c5718f684184f": {
+      "address": "0xeb9583A15F89C7f61411bE59dBaafEb8430Dc0A0",
+      "txHash": "0x2d2629608663a7ee4fdb8666577b70d08dc8c1f1100296957acabc74b261fec2",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "_tokenIds",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:30"
+          },
+          {
+            "label": "protocolFeeDestination",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:33"
+          },
+          {
+            "label": "protocolFeePercent",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:34"
+          },
+          {
+            "label": "creatorFeePercent",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:35"
+          },
+          {
+            "label": "basicPrice",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:36"
+          },
+          {
+            "label": "_uris",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_uint256,t_string_storage)",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:44"
+          },
+          {
+            "label": "tokenSupply",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:46"
+          },
+          {
+            "label": "tokenPermissions",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_mapping(t_uint256,t_address)",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:48"
+          },
+          {
+            "label": "creator",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_mapping(t_uint256,t_address)",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:50"
+          },
+          {
+            "label": "isBonded",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_uint256,t_bool)",
+            "contract": "MasterCollectionV3",
+            "src": "contracts/MasterCollectionV3.sol:52"
           }
         ],
         "types": {
