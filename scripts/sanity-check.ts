@@ -21,7 +21,7 @@ async function main() {
   const main_alchemy = new Alchemy(main_settings);
   const goerli_alchemy = new Alchemy(goerli_settings);
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 30; i < 38; i++) {
     const tokenId = 7;
     const main_collectorAddreses = await main_alchemy.nft.getOwnersForNft(
       contract,

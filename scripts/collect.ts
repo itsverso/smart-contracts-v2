@@ -14,24 +14,47 @@ async function main() {
   console.log("Key: ", privateKey);
   // Alchemy API key
   const alchemyKey = process.env.ALCHEMY_KEY;
+  const infuraKey = process.env.INFURA_KEY;
   console.log("Alchemy: ", alchemyKey);
   // Instantiate provider
+  const InfuraProvider = new ethers.providers.InfuraProvider(
+    "optimism",
+    infuraKey
+  );
   const Provider = new ethers.providers.AlchemyProvider("optimism", alchemyKey);
   // Create a signer with the specified private key
-  const signer = new ethers.Wallet(privateKey, Provider);
+  const signer = new ethers.Wallet(privateKey, InfuraProvider);
   // Instantiate contract with signer
   let master = new ethers.Contract(address_mainnet, MASTER_JSON.abi, signer);
 
-  let tokenId = 38;
-  let collectorIndex = 0;
+  // Token ID 51 is tokenID 182 in new contract
+  let tokenId = 182;
+  let collectorIndex = 1;
   let owners = VERSOS.versos[tokenId - 1].owners as string[];
   let owner = owners[collectorIndex];
+
   if (ethers.utils.isAddress(owner)) {
-    let price = await master.getBuyPriceAfterFee(tokenId);
-    await master.collect(tokenId, owner, "0x", {
-      value: price,
-    });
-    console.log(`Collected token ID ${tokenId} for: ${owner}`);
+    let price = await master.getBuyPriceAfterFee(182);
+    try {
+      let tx = await master.collect(
+        182,
+        "0x6ba63e9cb1a80c9b5c202b1a87a9ff1d159f4928",
+        "0x",
+        {
+          value: price,
+          gasLimit: 150000,
+        }
+      );
+
+      let receipt = await tx.wait();
+      if (receipt && receipt.status == 1) {
+        console.log(`Collected token ID ${tokenId} for: ${owner}`);
+      } else {
+        console.log(receipt);
+      }
+    } catch (e) {
+      console.log("transaction REVERTED!");
+    }
   } else {
     console.log("Not a valid owner");
   }

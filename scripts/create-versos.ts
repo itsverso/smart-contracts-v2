@@ -24,7 +24,7 @@ async function main() {
   let name = await master.name();
   console.log("Name: ", name);
 
-  let tx = await master.adminCreate(VERSOS.versos.slice(0, 50));
+  let tx = await master.adminCreate([VERSOS.versos[51]]);
 
   let balance = await master.balanceOf(VERSOS.versos[0].creator, 1);
   console.log("Balance: ", balance);
