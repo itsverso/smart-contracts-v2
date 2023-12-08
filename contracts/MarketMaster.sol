@@ -284,7 +284,7 @@ contract MarketMaster is
         private
     {   
         uint256 supply = tokenSupply[_collection][_tokenId];
-        require(supply > 1, "Cannot sell the last share");
+        // require(supply > 1, "Cannot sell the last share");
         uint256 price = getPrice(supply - _amount, _amount);
         uint256 protocolFee = price * protocolFeePercent / 1 ether;
         uint256 subjectFee = price * creatorFeePercent / 1 ether;

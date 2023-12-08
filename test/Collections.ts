@@ -286,6 +286,70 @@ describe("Collections", function () {
         );
         expect(marketSupply).to.equal(collectionSupply);
       });
+
+      it("Should allow collections to OWN versos", async function () {
+        await collection.create(
+          "www.url.com",
+          collection.address,
+          "0x0000000000000000000000000000000000000000",
+          marketMaster.address,
+          "100000000000000000",
+          0,
+          true,
+          true
+        );
+        let balance = await collection.balanceOf(collection.address, 2);
+        expect(balance).to.equal("1");
+      });
+
+      it("Should allow collections to BURN versos", async function () {
+        await collection.create(
+          "www.url.com",
+          collection.address,
+          "0x0000000000000000000000000000000000000000",
+          marketMaster.address,
+          "100000000000000000",
+          0,
+          true,
+          true
+        );
+        await collection.withdraw(collection.address, 2, 1);
+        let balance = await collection.balanceOf(collection.address, 2);
+        expect(balance).to.equal("0");
+      });
+
+      it("Should allow to create GATED collections", async function () {
+        const [owner, otherAccount] = await ethers.getSigners();
+        const Registry = await ethers.getContractFactory("ProfileRegistry");
+        const registry = await upgrades.deployProxy(Registry, [owner.address], {
+          kind: "uups",
+          initializer: "initialize",
+        });
+        await registry.deployed();
+        await registry.registerProfile(
+          owner.address,
+          "itsahandle",
+          "www.url.com"
+        );
+
+        let tx = await collectionFactory.createCollection({
+          _collectionName: "NEW COLLECTION",
+          _collectionMetadataURI: "www.url.com",
+          _readType: 0,
+          _writeType: 1,
+          _collectionPermissions: "0x0000000000000000000000000000000000000000",
+          _minimumBalance: 0,
+          _marketAddress: marketMaster.address,
+          _supplyLimit: 10,
+          _tokenPrice: 0,
+          _isBonded: true,
+        });
+
+        let receipt = await tx.wait();
+        await collection.withdraw(collection.address, 2, 1);
+        let balance = await collection.balanceOf(collection.address, 2);
+        expect(balance).to.equal("0");
+      });
     });
   });
 });

@@ -202,7 +202,6 @@ contract Collection is
     /// @param _isBonded: wether to attach the bonding curve or not  
     /// - Entry point to set all the parameters and mint first edtion.
 
-
     function create(
         string calldata url,
         address _receipient,
@@ -258,7 +257,7 @@ contract Collection is
     {
 
         require(id <= _tokenIds, "Token does not exists");
-        require(_checkTokenPermissions(id, msg.sender) == true, "No mint permission");
+        require(checkTokenPermissions(id, msg.sender) == true, "No mint permission");
 
         if (isListed[id]) {
             MarketMaster globalMarket = MarketMaster(marketAddresses[id]);
@@ -268,6 +267,23 @@ contract Collection is
 
         _mint(receipient, id, amount, "");
         tokenSupply[id] = tokenSupply[id] + amount;
+    }
+
+    /// @param collectionAddress: 
+    /// address where the token was minted.
+    /// @param tokenId: token ID.
+    /// @param amount: amount to burn
+    /// This function simply instantiates a Collection 
+    /// and calls the burn function on that collection
+    /// It is done this way to allow collections to own tokens themselves.
+    function withdraw(address collectionAddress, uint256 tokenId, uint256 amount)
+        public 
+        payable 
+        whenNotPaused()
+        onlyModerators()
+    {   
+        Collection collection = Collection(collectionAddress);        
+        collection.burn(tokenId, amount);
     }
 
     /// @param tokenId: token ID.
@@ -312,7 +328,7 @@ contract Collection is
     }
 
     /// TOKEN level COLLECT permissions 
-    function _checkTokenPermissions(uint tokenId, address account) private view returns (bool check){
+    function checkTokenPermissions(uint tokenId, address account) private view returns (bool check){
         if (tokenPermissions[tokenId] != address(0)){
             if (IERC165(tokenPermissions[tokenId]).supportsInterface(0xd9b67a26)){
                 ERC1155BalanceOf permissionsContract = ERC1155BalanceOf(tokenPermissions[tokenId]);
@@ -322,6 +338,16 @@ contract Collection is
                 return permissionsContract.balanceOf(account) > 0;
             }
         } else return true;
+    }
+
+    function _checkBalance(uint tokenId, address account) internal view returns (bool check) {
+        if (IERC165(tokenPermissions[tokenId]).supportsInterface(0xd9b67a26)){
+            ERC1155BalanceOf permissionsContract = ERC1155BalanceOf(tokenPermissions[tokenId]);
+            return permissionsContract.balanceOf(account, tokenId) > 0;
+        } else {
+            RegularBalanceOf permissionsContract = RegularBalanceOf(tokenPermissions[tokenId]);
+            return permissionsContract.balanceOf(account) > 0;
+        }
     }
 
 
