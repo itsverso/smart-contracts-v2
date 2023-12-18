@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "contracts/collections/Collection.sol";
 import "contracts/collections/factory/CollectionBeacon.sol";
 import "contracts/collections/CollectionRegistry.sol";
-import "contracts/helpers/Params.sol";
 
 /**
  * @title  Collection Factory Smart Contract
@@ -50,41 +49,44 @@ contract CollectionFactory is Ownable, Pausable {
     // Entrypoint: create
     ////////////////////////////
     function createCollection(
-        Params.CollectionInitParams memory params
+        string calldata _collectionName,
+        uint _readType,
+        uint _writeType,
+        address _collectionPermissions,
+        uint _minimumBalance,
+        string calldata _collectionMetadataURI
+        // address _marketAddress,
+        // uint _tokenPrice,
+        // bool _isBonded
     ) 
         external
         whenNotPaused() 
         returns (address) 
     {
         
-        
         // 1. Instantiate collection
         BeaconProxy collection = new BeaconProxy(address(collectionBeacon), 
             abi.encodeWithSelector(Collection(payable(address(0))).initialize.selector,
-            params._collectionName,
+            _collectionName,
             msg.sender,
-            params._readType,
-            params._writeType,
-            params._collectionPermissions,
-            params._minimumBalance
+            _readType,
+            _writeType,
+            _collectionPermissions,
+            _minimumBalance
         ));
-
 
         // 2. Register / mint collection
         CollectionRegistry registry = CollectionRegistry(_collectionRegistryAddress);
         registry.registerCollection(
             msg.sender, 
             address(collection), 
-            params._collectionMetadataURI,
-            params._collectionPermissions,
-            params._marketAddress,
-            params._supplyLimit, 
-            params._tokenPrice,
-            params._isBonded
+            _collectionMetadataURI,
+            _collectionPermissions
         );
+    
         
         // 3. Emit event 
-        emit CollectionCreated(address(collection), msg.sender, params._collectionMetadataURI);
+        emit CollectionCreated(address(collection), msg.sender, _collectionMetadataURI);
         return address(collection);
     }
 

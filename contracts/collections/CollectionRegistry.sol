@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../MarketMaster.sol";
 import "./Collection.sol";
 
+
 /**
  * @title  Collection Registry Smart Contract
  * @author Hugo Sanchez 
@@ -16,7 +17,6 @@ import "./Collection.sol";
  */ 
 
 
-// To do: allow for listed collections
 
 contract CollectionRegistry is 
 
@@ -31,7 +31,7 @@ contract CollectionRegistry is
     uint private _tokenIds;
     // Factory 
     address private _collectionFactoryAddress;
-    // 
+    // default role
     bytes32 internal constant DEFAULT_MODERATORS_ROLE = keccak256("MODERATORS");
 
     
@@ -53,7 +53,7 @@ contract CollectionRegistry is
     // TokenID => Market address
     mapping(uint256 => address) public marketAddresses;
     // TokenID => Creator
-    mapping(uint256 => address) public creator;
+   // mapping(uint256 => address) public creator;  
 
     
     ////////////////////////////
@@ -76,7 +76,7 @@ contract CollectionRegistry is
     modifier onlyFactoryOrOwner() {
         require(
             msg.sender == _collectionFactoryAddress || msg.sender == owner(),
-            "only moderators allowed"
+            "only factory or owner allowed"
         );
         _;
     }
@@ -160,11 +160,7 @@ contract CollectionRegistry is
         address _creator,
         address _collectionAddress,
         string calldata _collectionMetadataUri,
-        address _permissions,
-        address marketAddress,
-        uint _supplyLimit, 
-        uint _tokenPrice,
-        bool _isBonded
+        address _permissions
     )
         public 
         whenNotPaused()
@@ -174,24 +170,16 @@ contract CollectionRegistry is
         _tokenIds++;
         uint256 newTokenId = _tokenIds;
         // 2. Set mappings 
+             
         tokenPermissions[newTokenId] = _permissions;
-        marketAddresses[newTokenId] = marketAddress;
         collectionAddresses[newTokenId] = _collectionAddress;
         addressToTokenID[_collectionAddress] = newTokenId;
-        // 3. List token on market
-        MarketMaster market = MarketMaster(marketAddress);
-        market.listToken(
-            newTokenId, 
-            _creator, 
-            _isBonded,
-            _supplyLimit,
-            _tokenPrice
-        );
-        // 4. Mint and set uri 
+        // 3. Mint and set uri 
         _mint(_creator, newTokenId, 1, "");
         _setTokenUri(newTokenId, _collectionMetadataUri);
         _setTokenMetadata(newTokenId, _collectionMetadataUri);
         tokenSupply[newTokenId] = tokenSupply[newTokenId] + 1;
+
     }
 
 
@@ -215,6 +203,41 @@ contract CollectionRegistry is
         _setTokenMetadata(tokenId, collectionMetadataUri);
     }
 
+    /// Allows listing a collection in market
+    /// @param collectionAddress: the smart contract address for the collection.
+    /// @param marketAddress: the smart contract address for the market
+    /// @param feeReceiver: who should receive mint fee
+    /// @param _supplyLimit: what the supply limit should be.
+    /// @param _tokenPrice: token price if not bonded
+    /// @param _isBonded: whether its a bonded NFT or not. 
+    
+    function listCollection(
+        address collectionAddress,
+        address marketAddress,
+        address feeReceiver,
+        uint _supplyLimit, 
+        uint _tokenPrice,
+        bool _isBonded
+    )
+        public 
+        whenNotPaused()
+        onlyFactoryOrOwner()
+    {   
+        Collection collectionInstance = Collection(collectionAddress);
+        require(collectionInstance.hasRole(DEFAULT_MODERATORS_ROLE, msg.sender),
+         "only moderators allowed");
+        uint tokenId = addressToTokenID[collectionAddress];
+        require (marketAddresses[tokenId] == address(0), "Already listed");
+        MarketMaster market = MarketMaster(marketAddress);
+        market.listToken(
+            tokenId, 
+            feeReceiver, 
+            _isBonded,
+            _supplyLimit,
+            _tokenPrice
+        );
+    }
+
     /// Allows anyone to collect a collection if permissions check.
     /// @param collectionAddress: the smart contract address for the collection.
     /// @param receipient: who receives token.
@@ -224,12 +247,18 @@ contract CollectionRegistry is
         payable
         whenNotPaused()
         returns (string memory)
-    {      
+    {    
         // Check permissions
         uint tokenId = addressToTokenID[collectionAddress];
         require (tokenId <= _tokenIds, "Token does not exists");
         Collection collectionInstance = Collection(collectionAddress);
         require(collectionInstance.hasReadPermission(receipient), 'not allowed');
+        // Execute buy if token is listed
+        if (marketAddresses[tokenId] != address(0)) {
+            MarketMaster globalMarket = MarketMaster(marketAddresses[tokenId]);
+            require(tokenSupply[tokenId] < globalMarket.supplyLimit(address(this), tokenId));
+            globalMarket.executeBuy{value: msg.value}(tokenId, 1);
+        }
         // Mint if checks are OK.
         _mint(receipient, tokenId, 1, "");
         tokenSupply[tokenId] = tokenSupply[tokenId] + 1;
@@ -247,6 +276,11 @@ contract CollectionRegistry is
     {
         uint tokenId = addressToTokenID[collectionAddress];
         require (tokenId <= _tokenIds, "Token does not exists");
+        require(balanceOf(msg.sender, tokenId) >= amount, "Insificient balance");
+        if (marketAddresses[tokenId] != address(0)){
+            MarketMaster globalMarket = MarketMaster(marketAddresses[tokenId]);
+            globalMarket.executeSell(tokenId, amount);
+        }
         tokenSupply[tokenId] = tokenSupply[tokenId] - 1;
         _burn(msg.sender, tokenId, amount);
     }
