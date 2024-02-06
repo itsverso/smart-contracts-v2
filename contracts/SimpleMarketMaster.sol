@@ -18,7 +18,7 @@ import "hardhat/console.sol";
  *         collections too. One use case for that is charging to access private galleries.
  */ 
 
-contract MarketMaster is 
+contract SimpleMarketMaster is 
     Initializable, 
     OwnableUpgradeable, 
     UUPSUpgradeable, 
@@ -35,8 +35,7 @@ contract MarketMaster is
 
     // Fees 
     address private protocolFeeDestination; 
-    uint256 private protocolFeePercent; // 005000000000000000
-    uint256 private creatorFeePercent;  // 005000000000000000
+    uint256 private simpleFeePercent; // 10
     uint256 private basePrice; // 000055555555555555
     
     /////////////////////////////
@@ -60,8 +59,6 @@ contract MarketMaster is
     function initialize(
             address _owner,
             address _feeDestination,
-            uint256 _feePercent,
-            uint256 _creatorPercent,
             uint _basePrice
         ) public initializer {
             // Initialize ownable
@@ -73,9 +70,7 @@ contract MarketMaster is
             // Set platform fee destination
             protocolFeeDestination = _feeDestination;
             // Set protocol fee percent 
-            protocolFeePercent = _feePercent; // 005000000000000000
-            // Set creator fee percent
-            creatorFeePercent = _creatorPercent; // 005000000000000000
+            simpleFeePercent = 10;
             // Basic price 
             basePrice = _basePrice; // 000055555555555555
     }
@@ -101,12 +96,12 @@ contract MarketMaster is
         protocolFeeDestination = _feeDestination;
     }
 
-    function setProtocolFeePercent(uint256 _feePercent) public onlyOwner() {
-        protocolFeePercent = _feePercent;
+    function setBasePrice(uint newPrice) public onlyOwner() {
+        basePrice = newPrice;
     }
 
-    function setCreatorFeePercent(uint256 _feePercent) public onlyOwner() {
-        creatorFeePercent = _feePercent;
+    function setSimpleFeePercent(uint newFeePercent) public onlyOwner() {
+        simpleFeePercent = newFeePercent;
     }
 
     ////////////////////////////////
@@ -141,54 +136,39 @@ contract MarketMaster is
     }
 
     ///////////////////////////////// 
-    // Bonding curve price getters
+    // Price getters
     ///////////////////////////////// 
 
-    function getPrice(uint256 supply, uint256 amount) 
-        internal pure returns (uint256) 
-    {
-        uint256 sum1 = supply == 0 ? 0 : (supply - 1) * (supply) * (2 * (supply - 1) + 1) / 6;
-        uint256 sum2 = supply == 0 && amount == 1 ? 0 : (supply - 1 + amount) * (supply + amount) * (2 * (supply - 1 + amount) + 1) / 6;
-        uint256 summation = sum2 - sum1;
-        return summation * 1 ether / 36000;
-    }
-
+    /**
+     * @param _collection: smart contract address for token 
+     * @param _tokenId: token id within collection
+     * @param _amount: amount to be bought
+     * Super simple function returns price for a token. 
+     * Price is always token price + base price.
+     */
     function getBuyPrice(address _collection, uint256 _tokenId, uint _amount) 
         public 
         view 
         returns (uint256 price) 
     {   
-        
-        if (isBonded[_collection][_tokenId]) {
-            return getPrice(tokenSupply[_collection][_tokenId], _amount); 
-        } else {
-            return ((tokenPrice[_collection][_tokenId] * _amount) + basePrice);
-        }
+        return ((tokenPrice[_collection][_tokenId] + basePrice) * _amount);
     }
 
-    function getSellPrice(address _collection, uint256 _tokenId, uint _amount) 
-        public view returns (uint256 price) 
-    {
-        return getPrice(tokenSupply[_collection][_tokenId] - _amount, _amount);
-    }
-
+     /**
+     * @param _collection: smart contract address for token 
+     * @param _tokenId: token id within collection
+     * @param _amount: amount to be bought
+     * Super simple function returns price for a token. 
+     * Price is always token price + base price.
+     */
     function getBuyPriceAfterFee(address _collection, uint256 _tokenId, uint _amount) 
-        public view returns (uint256) 
-    {
-        uint256 price = getBuyPrice(_collection, _tokenId, _amount);
-        uint256 protocolFee = price * protocolFeePercent / 1 ether;
-        uint256 creatorFee = price * creatorFeePercent / 1 ether;
-        return price + protocolFee + creatorFee + basePrice;
+        public 
+        view 
+        returns (uint256 price) 
+    {   
+        return getBuyPrice(_collection, _tokenId, _amount);
     }
 
-    function getSellPriceAfterFee(address _collection, uint256 _tokenId, uint _amount) 
-        public view returns (uint256) 
-    {
-        uint256 price = getSellPrice(_collection, _tokenId, _amount);
-        uint256 protocolFee = price * protocolFeePercent / 1 ether;
-        uint256 creatorFee = price * creatorFeePercent / 1 ether;
-        return price - protocolFee - creatorFee;
-    }
 
     ////////////////////////////////
     // Executes
@@ -206,23 +186,7 @@ contract MarketMaster is
         payable 
         whenNotPaused()
     {   
-        if (isBonded[msg.sender][_tokenId]) _executeBondedBuy(msg.sender, _referer, _tokenId, _amount);
-        else  _executeRegularBuy(msg.sender, _referer, _tokenId, _amount);
-    }
-
-     /**
-     * Checks token type (bonded or not) and executes trade
-     * on behalf of collections (collection is the caller (msg.sender))
-     * @param _tokenId: the ID of the token
-     * @param _amount: amount to sell
-     */
-
-    function executeSell(uint _tokenId, uint _amount) 
-        public 
-        payable
-        whenNotPaused() 
-    {
-        if (isBonded[msg.sender][_tokenId]) _executeBondedSell(msg.sender, _tokenId, _amount);
+        _executeRegularBuy(msg.sender, _referer, _tokenId, _amount);
     }
 
     /**
@@ -242,69 +206,16 @@ contract MarketMaster is
         private 
     {
         uint totalPrice = (tokenPrice[_collection][_tokenId] + basePrice) * _amount;
-        require(msg.value > totalPrice);
+        require(msg.value > totalPrice, "Insufficient funds");
         uint protocolFee = totalPrice / 10;
-        uint refererFee = totalPrice / 10;
+        uint refererFee = _referer == address(0) ? 0 : totalPrice / 10;
         uint creatorFee = totalPrice - protocolFee - refererFee;
+        tokenSupply[_collection][_tokenId] = tokenSupply[_collection][_tokenId] + _amount;
         (bool success1, ) = protocolFeeDestination.call{value: protocolFee}("");
         (bool success2, ) = creator[_collection][_tokenId].call{value: creatorFee}("");
         (bool success3, ) = _referer.call{value: refererFee}("");
         require(success1 && success2 && success3, "Error executing regular buy");
     }
-
-    /**
-     * Executes trade in case token IS bonded
-     * If is bonded, basePrice still gets paid (!)
-     * @param _collection: collection SC address
-     * @param _referer: user who recomends gets a cut
-     * @param _tokenId: the ID of the token
-     * @param _amount: amount to sell
-     */
-    function _executeBondedBuy(
-        address _collection,
-        address _referer,
-        uint256 _tokenId, 
-        uint _amount
-    ) 
-        private 
-    {
-        uint256 supply = tokenSupply[_collection][_tokenId];
-        uint256 price = getPrice(supply, _amount);
-        uint256 protocolFee = price * protocolFeePercent / 1 ether;
-        uint256 creatorFee = price * creatorFeePercent / 1 ether;
-        require(msg.value >= price + protocolFee + creatorFee, "insufficient payment");
-        // We call _executeRegularBuy to get the base fee paid and distributed;
-        // We only do that if supply > 0, otherwise we're just creating first instance;
-        if (supply > 0) _executeRegularBuy(_collection, _referer, _tokenId, _amount);
-        tokenSupply[_collection][_tokenId] = supply + _amount;
-        (bool success1, ) = protocolFeeDestination.call{value: protocolFee}("");
-        (bool success2, ) = creator[_collection][_tokenId].call{value: creatorFee}("");
-        require(success1 && success2, "Error executing buy");
-    }
-
-    /**
-     * Executes trade in case token IS bonded
-     * @param _collection: collection SC address
-     * @param _tokenId: the ID of the token
-     * @param _amount: amount to sell
-     */
-    function _executeBondedSell(
-        address _collection,
-        uint256 _tokenId, 
-        uint _amount
-    )  
-        private
-    {   
-        uint256 supply = tokenSupply[_collection][_tokenId];
-        // require(supply > 1, "Cannot sell the last share");
-        uint256 price = getPrice(supply - _amount, _amount);
-        uint256 protocolFee = price * protocolFeePercent / 1 ether;
-        uint256 subjectFee = price * creatorFeePercent / 1 ether;
-        tokenSupply[_collection][_tokenId] = supply - _amount;
-        (bool success1, ) = protocolFeeDestination.call{value: protocolFee}("");
-        (bool success2, ) = creator[_collection][_tokenId].call{value: subjectFee}("");
-        require(success1 && success2, "Error executing sell");
-    }  
 
     ////////////////////////////
     // Others: Mandatory

@@ -257,7 +257,7 @@ contract CollectionRegistry is
         if (marketAddresses[tokenId] != address(0)) {
             MarketMaster globalMarket = MarketMaster(marketAddresses[tokenId]);
             require(tokenSupply[tokenId] < globalMarket.supplyLimit(address(this), tokenId));
-            globalMarket.executeBuy{value: msg.value}(tokenId, 1);
+            globalMarket.executeBuy{value: msg.value}(tokenId, 1, receipient);
         }
         // Mint if checks are OK.
         _mint(receipient, tokenId, 1, "");

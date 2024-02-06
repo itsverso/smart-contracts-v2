@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "contracts/collections/Collection.sol";
 import "contracts/collections/factory/CollectionBeacon.sol";
 import "contracts/collections/CollectionRegistry.sol";
+import "contracts/helpers/Params.sol";
 
 /**
  * @title  Collection Factory Smart Contract
@@ -49,12 +50,13 @@ contract CollectionFactory is Ownable, Pausable {
     // Entrypoint: create
     ////////////////////////////
     function createCollection(
-        string calldata _collectionName,
-        uint _readType,
-        uint _writeType,
-        address _collectionPermissions,
-        uint _minimumBalance,
-        string calldata _collectionMetadataURI
+         Params.CollectionInitParams memory params
+        // string calldata _collectionName,
+        // uint _readType,
+        // uint _writeType,
+        // address _collectionPermissions,
+        // uint _minimumBalance,
+        // string calldata _collectionMetadataURI
         // address _marketAddress,
         // uint _tokenPrice,
         // bool _isBonded
@@ -67,12 +69,12 @@ contract CollectionFactory is Ownable, Pausable {
         // 1. Instantiate collection
         BeaconProxy collection = new BeaconProxy(address(collectionBeacon), 
             abi.encodeWithSelector(Collection(payable(address(0))).initialize.selector,
-            _collectionName,
+            params._collectionName,
             msg.sender,
-            _readType,
-            _writeType,
-            _collectionPermissions,
-            _minimumBalance
+            params._readType,
+            params._writeType,
+            params._collectionPermissions,
+            params._minimumBalance
         ));
 
         // 2. Register / mint collection
@@ -80,13 +82,13 @@ contract CollectionFactory is Ownable, Pausable {
         registry.registerCollection(
             msg.sender, 
             address(collection), 
-            _collectionMetadataURI,
-            _collectionPermissions
+            params._collectionMetadataURI,
+            params._collectionPermissions
         );
     
         
         // 3. Emit event 
-        emit CollectionCreated(address(collection), msg.sender, _collectionMetadataURI);
+        emit CollectionCreated(address(collection), msg.sender, params._collectionMetadataURI);
         return address(collection);
     }
 

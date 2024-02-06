@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "contracts/MarketMaster.sol";
 import "contracts/helpers/RegularBalanceOf.sol";
 import "contracts/helpers/ERC1155BalanceOf.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 
 import "hardhat/console.sol";
 /**
@@ -26,7 +28,8 @@ contract Collection is
     ERC1155Upgradeable, 
     AccessControlEnumerableUpgradeable, 
     ERC1155HolderUpgradeable,
-    PausableUpgradeable 
+    PausableUpgradeable, 
+    ReentrancyGuard
 
 {
 
@@ -194,12 +197,13 @@ contract Collection is
 
 
     /// @param url: metadata uri for token
-    /// @param _receipient: who will receive token once minted
-    /// @param _permissions: smart contract address for permissions
-    /// @param _marketAddress: global market smart contract address
-    /// @param _supplyLimit: how many tokens will ever exists 
-    /// @param _tokenPrice: what the price will be for the token 
-    /// @param _isBonded: wether to attach the bonding curve or not  
+    /// @param _receipient: who will receive token once minted, 
+    ///                     could be the collection itself.
+    /// @param _permissions: smart contract address for permissions.
+    /// @param _marketAddress: global market smart contract address.
+    /// @param _supplyLimit: how many tokens will ever exists.
+    /// @param _tokenPrice: what the price will be for the token.
+    /// @param _isBonded: wether to attach the bonding curve or not.
     /// - Entry point to set all the parameters and mint first edtion.
 
     function create(
@@ -228,7 +232,7 @@ contract Collection is
             globalMarket.listToken(newTokenId, msg.sender, _isBonded, _supplyLimit, _tokenPrice);
 
             if (_isBonded) {
-                globalMarket.executeBuy{value: msg.value}(newTokenId, 1);
+                globalMarket.executeBuy{value: msg.value}(newTokenId, 1, msg.sender);
             }
         }
 
@@ -248,7 +252,8 @@ contract Collection is
     function collect(
         uint id, 
         address receipient, 
-        uint amount
+        uint amount,
+        address referer
     )
         public 
         payable
@@ -262,7 +267,7 @@ contract Collection is
         if (isListed[id]) {
             MarketMaster globalMarket = MarketMaster(marketAddresses[id]);
             require(tokenSupply[id] < globalMarket.supplyLimit(address(this), id));
-            globalMarket.executeBuy{value: msg.value}(id, amount);
+            globalMarket.executeBuy{value: msg.value}(id, amount, referer);
         }
 
         _mint(receipient, id, amount, "");
@@ -294,6 +299,7 @@ contract Collection is
         public 
         payable 
         whenNotPaused()
+        nonReentrant()
     {   
         require(balanceOf(msg.sender, tokenId) >= amount, "Insificient balance");
         if (isListed[tokenId]){
