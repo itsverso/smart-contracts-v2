@@ -422,7 +422,6 @@ describe("Collections", function () {
           let parsedPrice = price.toString() / 100000000000000000
           let balance = await otherAccount.getBalance()
           
-          
           await collection
             .connect(otherAccount)
             .collect(2, otherAccount.address, 1, otherAccount.address, {
@@ -439,7 +438,7 @@ describe("Collections", function () {
           
         });
   
-        it("Should allow to BUY/COLLECT arbitrary number of bonded tokens", async function () {
+        it("Should allow to BUY/COLLECT arbitrary number of tokens", async function () {
           const [owner, otherAccount] = await ethers.getSigners();
 
           await collection.create(
@@ -476,6 +475,64 @@ describe("Collections", function () {
           
   
           expect(marketSupply).to.equal(12);
+        });
+
+        it("Should allow to SET PRICE for tokens", async function () {
+          const [owner, otherAccount] = await ethers.getSigners();
+
+          await collection.create(
+            "www.url2.com",
+            owner.address,
+            "0x0000000000000000000000000000000000000000",
+            simpleMarket.address,
+            "100000000000000000",
+            ethers.utils.parseEther("0.002"),
+            true,
+            false
+          );
+  
+          let price = await simpleMarket.getBuyPriceAfterFee(collection.address, 2, 1);
+          let parsed = (price / 1000000000000000000)
+
+          await collection
+            .connect(otherAccount)
+            .collect(2, otherAccount.address, 1, otherAccount.address, {
+              // This is ugly AF
+              value: ethers.utils.parseEther((parsed * 1.01).toFixed(18).toString()),
+            });
+  
+          let marketSupply = await simpleMarket.tokenSupply(
+            collection.address,
+            2
+          );
+          
+          expect(marketSupply).to.equal(2);
+        });
+
+        it("Should NOT allow to mint beyond token supply limit", async function () {
+          const [owner, otherAccount] = await ethers.getSigners();
+
+          await collection.create(
+            "www.url2.com",
+            owner.address,
+            "0x0000000000000000000000000000000000000000",
+            simpleMarket.address,
+            "10",
+            ethers.utils.parseEther("0.002"),
+            true,
+            false
+          );
+  
+          let price = await simpleMarket.getBuyPriceAfterFee(collection.address, 2, 10);
+          let parsed = (price / 1000000000000000000)
+                  
+         
+          await expect(collection
+            .connect(otherAccount)
+            .collect(2, otherAccount.address, 10, otherAccount.address, {
+              value: ethers.utils.parseEther((parsed * 1.01).toFixed(18).toString()),
+            })
+            ).to.be.revertedWith("Max supply reached");
         });
       });
     });

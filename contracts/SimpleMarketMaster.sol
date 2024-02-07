@@ -205,15 +205,24 @@ contract SimpleMarketMaster is
     ) 
         private 
     {
+        // Get token data
+        uint currentSupply = tokenSupply[_collection][_tokenId];
+        uint maxSupply = supplyLimit[_collection][_tokenId];
         uint totalPrice = (tokenPrice[_collection][_tokenId] + basePrice) * _amount;
+        // Check value and supply limit
+        require(currentSupply + _amount <= maxSupply , "Max supply reached");
         require(msg.value > totalPrice, "Insufficient funds");
+        // Calculate fee distribution
         uint protocolFee = totalPrice / 10;
         uint refererFee = _referer == address(0) ? 0 : totalPrice / 10;
         uint creatorFee = totalPrice - protocolFee - refererFee;
-        tokenSupply[_collection][_tokenId] = tokenSupply[_collection][_tokenId] + _amount;
+        // Update tokenSupply
+        tokenSupply[_collection][_tokenId] = currentSupply + _amount;
+        // Execute fee distribution
         (bool success1, ) = protocolFeeDestination.call{value: protocolFee}("");
         (bool success2, ) = creator[_collection][_tokenId].call{value: creatorFee}("");
         (bool success3, ) = _referer.call{value: refererFee}("");
+        // Sanity check
         require(success1 && success2 && success3, "Error executing regular buy");
     }
 
