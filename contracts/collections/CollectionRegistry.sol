@@ -177,7 +177,7 @@ contract CollectionRegistry is
         // 3. Mint and set uri 
         _mint(_creator, newTokenId, 1, "");
         _setTokenUri(newTokenId, _collectionMetadataUri);
-        _setTokenMetadata(newTokenId, _collectionMetadataUri);
+        // _setTokenMetadata(newTokenId, _collectionMetadataUri);
         tokenSupply[newTokenId] = tokenSupply[newTokenId] + 1;
 
     }

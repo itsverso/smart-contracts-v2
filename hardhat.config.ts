@@ -16,6 +16,7 @@ dotenv.config();
 // in its dashboard, and replace "KEY" with it
 const INFURA_API_KEY = process.env.INFURA_PRIVATE_KEY as string;
 const INFURA_API_KEY__MAINNET = process.env.INFURA_API_KEY__MAINNET as string;
+const INFURA_API_KEY_SEPOLIA_OP = process.env.INFURA_API_KEY_SEPOLIA_OP as string;
 // Replace this private key with your Sepolia account private key
 // To export your private key from Coinbase Wallet, go to
 // Settings > Developer Settings > Show private key
@@ -31,6 +32,10 @@ const config: HardhatUserConfig = {
   networks: {
     goerli: {
       url: INFURA_API_KEY,
+      accounts: [PRIVATE_KEY],
+    },
+    sepolia: {
+      url: INFURA_API_KEY_SEPOLIA_OP,
       accounts: [PRIVATE_KEY],
     },
     optimism: {

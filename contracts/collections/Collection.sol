@@ -394,6 +394,4 @@ contract Collection is
             return this.onERC1155BatchReceived.selector;
         }
     }
-
-
 }

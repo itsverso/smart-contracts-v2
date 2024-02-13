@@ -141,8 +141,8 @@ describe("Collections", function () {
     beforeEach(async function () {
       const [account, otherAccount] = await ethers.getSigners();
       let tx = await collectionFactory.createCollection({
-        _collectionName: "NAME",
-        _collectionMetadataURI: "www.url.com",
+        _collectionName: "First Collection",
+        _collectionMetadataURI: "https://arweave.net/C4htVOEblNnOjXT251919X0O3rLyE-BpxVKS6YQocKo",
         _readType: 0,
         _writeType: 1,
         _collectionPermissions: "0x0000000000000000000000000000000000000000",
@@ -159,7 +159,7 @@ describe("Collections", function () {
     });
 
     it("Should DEPLOY new instance of Collection and set NAME", async function () {
-      expect(await collection.name()).to.equal("NAME");
+      expect(await collection.name()).to.equal("First Collection");
     });
 
     it("Should DEPLOY new instance of Collection and set first MODERATOR", async function () {

@@ -87,6 +87,11 @@ contract SimpleMarketMaster is
         _unpause();
     }
 
+    function getBasePrice() 
+        public view returns (uint) {
+        return basePrice;
+    }
+
     function getTokenSupply(address _collection, uint _tokenId) 
         public view returns (uint) {
         return tokenSupply[_collection][_tokenId];
