@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "./FollowRegistry.sol";
 
 /**
  * @title  New Profile Registry Smart Contract
@@ -69,6 +68,7 @@ contract ProfileRegistry is
             _tokenIds++;
             // Initiate ownable 
             __Ownable_init(_owner);
+            transferOwnership(_owner);
             // Initiate UUPS
             __UUPSUpgradeable_init();
             // Initiate pausable
@@ -139,11 +139,6 @@ contract ProfileRegistry is
         return handleOwnershipById[handleHash];
     }
 
-    // Returns current tokenID
-    function setFollowRegistryAddress(address _address) public onlyOwner() {
-        followRegistryAddress = _address;
-    }
-
 
     ////////////////////////////////
     // Core  
@@ -184,9 +179,6 @@ contract ProfileRegistry is
         _safeMint(recipient, newRecordId);
         // Set profile details (URL).
         _setTokenURI(newRecordId, _metadataURI);
-        // Register first follow NFT.
-        FollowRegistry _followRegistryInstance = FollowRegistry(followRegistryAddress);
-        _followRegistryInstance.register(newRecordId, recipient);
         // Emit event 
         emit NewProfileCreated(recipient, _handle, _metadataURI);
     }

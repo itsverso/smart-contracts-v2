@@ -6,13 +6,12 @@ import "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnume
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 import "contracts/MarketMaster.sol";
 import "contracts/helpers/RegularBalanceOf.sol";
 import "contracts/helpers/ERC1155BalanceOf.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-
-import "hardhat/console.sol";
 /**
  * @title  Collection Smart Contract
  * @author Hugo Sanchez

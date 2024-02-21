@@ -17,6 +17,7 @@ import "./Collection.sol";
  */ 
 
 
+// To do: allow for listed collections
 
 contract CollectionRegistry is 
 
@@ -90,6 +91,7 @@ contract CollectionRegistry is
         address _factoryAddress
         ) public initializer {
             __Ownable_init(_owner);
+            transferOwnership(_owner);
             // Instantiate receiver
             __ERC1155_init("");
             // Initiate pausable
@@ -170,16 +172,14 @@ contract CollectionRegistry is
         _tokenIds++;
         uint256 newTokenId = _tokenIds;
         // 2. Set mappings 
-             
         tokenPermissions[newTokenId] = _permissions;
         collectionAddresses[newTokenId] = _collectionAddress;
         addressToTokenID[_collectionAddress] = newTokenId;
         // 3. Mint and set uri 
         _mint(_creator, newTokenId, 1, "");
-        _setTokenUri(newTokenId, _collectionMetadataUri);
-        // _setTokenMetadata(newTokenId, _collectionMetadataUri);
+        // _setTokenUri(newTokenId, _collectionMetadataUri);
+        _setTokenMetadata(newTokenId, _collectionMetadataUri);
         tokenSupply[newTokenId] = tokenSupply[newTokenId] + 1;
-
     }
 
 
@@ -199,18 +199,10 @@ contract CollectionRegistry is
         require(collectionInstance.hasRole(DEFAULT_MODERATORS_ROLE, msg.sender),
          "only moderators allowed");
         uint tokenId = addressToTokenID[collectionAddress];
-        _setTokenUri(tokenId, collectionMetadataUri);
+        // _setTokenUri(tokenId, collectionMetadataUri);
         _setTokenMetadata(tokenId, collectionMetadataUri);
     }
 
-    /// Allows listing a collection in market
-    /// @param collectionAddress: the smart contract address for the collection.
-    /// @param marketAddress: the smart contract address for the market
-    /// @param feeReceiver: who should receive mint fee
-    /// @param _supplyLimit: what the supply limit should be.
-    /// @param _tokenPrice: token price if not bonded
-    /// @param _isBonded: whether its a bonded NFT or not. 
-    
     function listCollection(
         address collectionAddress,
         address marketAddress,
@@ -242,7 +234,7 @@ contract CollectionRegistry is
     /// @param collectionAddress: the smart contract address for the collection.
     /// @param receipient: who receives token.
 
-    function collect(address collectionAddress, address receipient)
+    function collect(address collectionAddress, address receipient, address referer)
         public 
         payable
         whenNotPaused()
@@ -257,7 +249,7 @@ contract CollectionRegistry is
         if (marketAddresses[tokenId] != address(0)) {
             MarketMaster globalMarket = MarketMaster(marketAddresses[tokenId]);
             require(tokenSupply[tokenId] < globalMarket.supplyLimit(address(this), tokenId));
-            globalMarket.executeBuy{value: msg.value}(tokenId, 1, receipient);
+            globalMarket.executeBuy{value: msg.value}(tokenId, 1, referer);
         }
         // Mint if checks are OK.
         _mint(receipient, tokenId, 1, "");

@@ -70,7 +70,7 @@ contract SimpleMarketMaster is
             // Set platform fee destination
             protocolFeeDestination = _feeDestination;
             // Set protocol fee percent 
-            simpleFeePercent = 10;
+            simpleFeePercent = 20;
             // Basic price 
             basePrice = _basePrice; // 000055555555555555
     }
@@ -218,8 +218,8 @@ contract SimpleMarketMaster is
         require(currentSupply + _amount <= maxSupply , "Max supply reached");
         require(msg.value > totalPrice, "Insufficient funds");
         // Calculate fee distribution
-        uint protocolFee = totalPrice / 10;
-        uint refererFee = _referer == address(0) ? 0 : totalPrice / 10;
+        uint protocolFee = totalPrice / 5;
+        uint refererFee = _referer == address(0) ? 0 : totalPrice / 5;
         uint creatorFee = totalPrice - protocolFee - refererFee;
         // Update tokenSupply
         tokenSupply[_collection][_tokenId] = currentSupply + _amount;
